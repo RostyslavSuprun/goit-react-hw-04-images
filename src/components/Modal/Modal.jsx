@@ -1,41 +1,39 @@
-import { Component } from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import s from './Modal.module.css';
+import { ModalOverlay, ModalContainer } from './Modal.styled';
 
-export default class Modal extends Component {
-  static propTypes = {
-    url: PropTypes.string.isRequired,
-    onClose: PropTypes.func.isRequired,
-  };
+export const Modal = ({ selectedImage, alt, onClose }) => {
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
 
-  state = {};
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  });
 
-  componentDidMount() {
-    window.addEventListener('keydown', this.clickEsc);
-  }
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.clickEsc);
-  }
-
-  clickBackdrop = event => {
-    if (event.target === event.currentTarget) {
-      this.props.onClose();
+  const handleKeyDown = e => {
+    if (e.code === 'Escape') {
+      onClose();
     }
   };
 
-  clickEsc = event => {
-    if (event.code === 'Escape') {
-      this.props.onClose();
+  const handleBackdropClick = e => {
+    if (e.target === e.currentTarget) {
+      onClose();
     }
   };
 
-  render() {
-    return (
-      <div className={s.overlay} onClick={this.clickBackdrop}>
-        <div className={s.modal}>
-          <img src={this.props.url} alt="" />
-        </div>
-      </div>
-    );
-  }
-}
+  return (
+    <ModalOverlay onClick={handleBackdropClick}>
+      <ModalContainer>
+        <img src={selectedImage} alt={alt} />
+      </ModalContainer>
+    </ModalOverlay>
+  );
+};
+
+Modal.propTypes = {
+  selectedImage: PropTypes.string.isRequired,
+  alt: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+};

@@ -1,51 +1,55 @@
-import React, { Component } from 'react';
-import ImageGallery from './ImageGallery/ImageGallery';
-import Modal from './Modal/Modal';
-import Searchbar from './Searchbar/Searchbar';
+import React, { useEffect, useState } from 'react';
+import { SearchBar, getImages, Gallery, ButtonStyled, Loader } from './index';
 
-class App extends Component {
-  state = {
-    inputValue: '',
-    modalImg: '',
-    showModal: false,
-    page: 1,
+const App = () => {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showBtn, setShowBtn] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (query === '') {
+      return;
+    }
+    getImages(query, page)
+      .then(({ hits, totalHits }) => {
+        if (!hits.length) {
+          alert('Нічого не знайдено');
+          return;
+        }
+        setImages(prevState => [...prevState, ...hits]);
+        setShowBtn(page < Math.ceil(totalHits / 12));
+      })
+      .catch(error => {
+        setError(error.message);
+      })
+      .finally(setIsLoading(false));
+  }, [query, page]);
+
+  const onSubmit = newQuery => {
+    if (newQuery === query) return;
+    setIsLoading(true);
+    setImages([]);
+    setShowBtn(false);
+    setQuery(newQuery);
   };
 
-  getInputValue = handleValue => {
-    this.setState({ inputValue: handleValue, page: 1 });
+  const handleClickMore = () => {
+    setPage(prevState => prevState + 1);
+    setIsLoading(true);
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
-  };
+  return (
+    <>
+      <SearchBar onSubmit={onSubmit} />
 
-  getLargeImg = url => {
-    this.toggleModal();
-    this.setState({ modalImg: url });
-  };
-
-  loadMoreBtn = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
-
-  render() {
-    const { modalImg, showModal, page } = this.state;
-
-    return (
-      <>
-        <Searchbar getInputValue={this.getInputValue} />
-        <ImageGallery
-          inputValue={this.state.inputValue}
-          onClick={this.getLargeImg}
-          loadMoreBtn={this.loadMoreBtn}
-          page={page}
-        />
-        {showModal && <Modal url={modalImg} onClose={this.toggleModal} />}
-      </>
-    );
-  }
-}
-
+      <Gallery images={images} />
+      {showBtn && <ButtonStyled onClick={handleClickMore} />}
+      <Loader isLoading={isLoading} />
+      {error && <h2>{error}</h2>}
+    </>
+  );
+};
 export default App;
